@@ -1,7 +1,28 @@
 #pragma once
 #include <string>
+#include <vector>
 
 using namespace std;
+
+struct Edge {
+    int destination_id;
+    int time;
+    bool is_closed;
+    Edge(int destination, int time) : destination_id(destination), time(time), is_closed(false) {}
+};
+
+struct ClassInfo {
+    string class_clode;
+    int location_id;
+};
+
+
+struct Student {
+    string name;
+    string student_id;
+    int residence_location_id;
+    vector<string> class_codes;
+};
 
 class CampusCompass {
 private:

@@ -9,7 +9,10 @@ int main() {
     CampusCompass compass;
 
     // ingest CSV data
-    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+    if (!compass.ParseCSV("data/edges.csv", "data/classes.csv")) {
+        cout << "Error: Failed to load CSV files" << endl;
+        return 0;
+    }
 
     // the below is example code for parsing commandline input
     int no_of_lines;
@@ -22,4 +25,5 @@ int main() {
         // parse your commands however you see fit
         compass.ParseCommand(command);
     }
+    return 0;
 }
