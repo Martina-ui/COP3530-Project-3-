@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <set>
 
 using namespace std;
 
@@ -27,13 +28,15 @@ struct Student {
 
 class CampusCompass {
 private:
-    // Think about what member variables you need to initialize
-    // perhaps some graph representation?
+    unordered_map<int, vector<Edge>> campus_graph;
+    unordered_map<string, Student> students;
+    unordered_map<string, ClassInfo> classes;
+    unordered_map<int, int> get_shortest_path(int starting_location); //helper for shortest path using dijkstra's algorithm
+    int calculate_cost_of_mst(int residence_location_id, const vector<int>& class_location_ids); //helper for generating student zone subgraph 
 public:
-    // Think about what helper functions you will need in the algorithm
     CampusCompass(); // constructor
     bool ParseCSV(const string &edges_filepath, const string &classes_filepath);
-    bool ParseCommand(const string &command);
+    void ParseCommand(const string &command);
     void insert_student(const string& name, const string& student_ID, int residence_location_id, const vector<string>& class_codes);
     void remove_student(const string& student_ID);
     void drop_class(const string& student_ID, const string& class_code);
