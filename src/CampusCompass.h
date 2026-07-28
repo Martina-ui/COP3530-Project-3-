@@ -14,7 +14,7 @@ struct Edge {
 };
 
 struct ClassInfo {
-    string class_clode;
+    string class_code;
     int location_id;
 };
 

@@ -1,6 +1,8 @@
 #include "CampusCompass.h"
-
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -9,13 +11,140 @@ CampusCompass::CampusCompass() {
 }
 
 bool CampusCompass::ParseCSV(const string &edges_filepath, const string &classes_filepath) {
+    //load edges.csv
+    ifstream edges_file(edges_filepath);
+    if (!edges_file.is_open()) {
+        return false; 
+    }
+    string line;
+    getline(edges_file, line); 
+
+    while (getline(edges_file, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string loc1_str, loc2_str, name1, name2, time_str;
+
+        getline(ss, loc1_str, ',');
+        getline(ss, loc2_str, ',');
+        getline(ss, name1, ',');
+        getline(ss, name2, ',');
+        getline(ss, time_str, ',');
+
+        int loc1 = stoi(loc1_str);
+        int loc2 = stoi(loc2_str);
+        int time = stoi(time_str);
+
+        campus_graph[loc1].push_back(Edge(loc2, time));
+        campus_graph[loc2].push_back(Edge(loc1, time));
+    }
+    edges_file.close();
+
+    //load classes.csv
+    ifstream classes_file(classes_filepath);
+    if (!classes_file.is_open()) {
+        return false;
+    }
+
+    getline(classes_file, line); 
+
+    while (getline(classes_file, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string code, loc_str;
+
+        getline(ss, code, ',');
+        getline(ss, loc_str, ','); 
+
+        ClassInfo info;
+        info.class_code = code;
+        info.location_id = stoi(loc_str);
+
+        classes[code] = info;
+    }
+    classes_file.close();
+
     // return boolean based on whether parsing was successful or not
     return true;
 }
 
 void CampusCompass::ParseCommand(const string &command) {
-    // do whatever regex you need to parse validity
-    // hint: return a boolean for validation when testing. For example:
+    if (command.empty()) return;
+
+    stringstream ss(command);
+    string op;
+    ss >> op; 
+
+    if (op == "insert") {
+        string dummy, name, student_ID;
+        int residence_location_id, n;
+        vector<string> class_codes;
+
+        getline(ss, dummy, '"'); 
+        getline(ss, name, '"');  
+
+        ss >> student_ID >> residence_location_id >> n;
+
+        for (int i = 0; i < n; i++) {
+            string code;
+            ss >> code;
+            class_codes.push_back(code);
+        }
+        insert_student(name, student_ID, residence_location_id, class_codes);
+    }
+    else if (op == "remove") {
+        string student_ID;
+        ss >> student_ID;
+        remove_student(student_ID);
+    }
+    else if (op == "dropClass") {
+        string student_ID, class_code;
+        ss >> student_ID >> class_code;
+        drop_class(student_ID, class_code);
+    }
+    else if (op == "replaceClass") {
+        string student_ID, old_class_code, new_class_code;
+        ss >> student_ID >> old_class_code >> new_class_code;
+        replace_class(student_ID, old_class_code, new_class_code);
+    }
+    else if (op == "removeClass") {
+        string class_code;
+        ss >> class_code;
+        remove_class(class_code);
+    }
+    else if (op == "toggleEdgesClosure") {
+        int n;
+        ss >> n;
+        vector<int> location_ids;
+        for (int i = 0; i < n * 2; i++) {
+            int loc;
+            ss >> loc;
+            location_ids.push_back(loc);
+        }
+        toggle_edges_closure(location_ids);
+    }
+    else if (op == "checkEdgeStatus") {
+        int loc_x, loc_y;
+        ss >> loc_x >> loc_y;
+        check_edge_status(loc_x, loc_y);
+    }
+    else if (op == "isConnected") {
+        int loc_1, loc_2;
+        ss >> loc_1 >> loc_2;
+        is_connected(loc_1, loc_2);
+    }
+    else if (op == "printShortestEdges") {
+        string student_ID;
+        ss >> student_ID;
+        print_shortest_edges(student_ID);
+    }
+    else if (op == "printStudentZone") {
+        string student_ID;
+        ss >> student_ID;
+        print_student_zone(student_ID);
+    }
+    else {
+        cout << "unsuccessful" << endl;
+    }
 }
 
 void CampusCompass::insert_student(const string& name, const string& student_ID, int residence_location_id, const vector<string>& class_codes) {
