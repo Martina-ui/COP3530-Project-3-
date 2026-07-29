@@ -84,12 +84,22 @@ void CampusCompass::ParseCommand(const string &command) {
 
         ss >> student_ID >> residence_location_id >> n;
 
+        bool valid_n_classes = true;
         for (int i = 0; i < n; i++) {
             string code;
-            ss >> code;
-            class_codes.push_back(code);
+            if (ss >> code) {
+                class_codes.push_back(code);
+            } else {
+                valid_n_classes = false; 
+                break;
+            }
         }
-        insert_student(name, student_ID, residence_location_id, class_codes);
+
+        if (!valid_n_classes) {
+            cout << "unsuccessful" << endl;
+        } else {
+            insert_student(name, student_ID, residence_location_id, class_codes);
+        }
     }
     else if (op == "remove") {
         string student_ID;
@@ -148,7 +158,64 @@ void CampusCompass::ParseCommand(const string &command) {
 }
 
 void CampusCompass::insert_student(const string& name, const string& student_ID, int residence_location_id, const vector<string>& class_codes) {
+    //validate the student
+    if (student_ID.length() != 8) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+    for (char c : student_ID) {
+        if (!isdigit(c)) {
+            cout << "unsuccessful" << endl;
+            return;
+        }
+    }
 
+    if (students.find(student_ID) != students.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    for (char c : name) {
+        if (!isalpha(c) && !isspace(c)) {
+            cout << "unsuccessful" << endl;
+            return;
+        }
+    }
+
+    if (class_codes.size() < 1 || class_codes.size() > 6) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    for (const string& code : class_codes) {
+        if (code.length() != 7) {
+            cout << "unsuccessful" << endl;
+            return;
+        }
+        for (int i = 0; i < 3; i++) {
+            if (!isupper(code[i])) { 
+                cout << "unsuccessful" << endl;
+                return;
+            }
+        }
+        for (int i = 3; i < 7; i++) {
+            if (!isdigit(code[i])) { 
+                cout << "unsuccessful" << endl;
+                return;
+            }
+        }
+    }
+
+    //if validation passes, student is created
+    Student new_student;
+    new_student.name = name;
+    new_student.student_ID = student_ID;
+    new_student.residence_location_id = residence_location_id;
+    new_student.class_codes = class_codes;
+
+    students[student_ID] = new_student;
+
+    cout << "successful" << endl;
 }
 
 void CampusCompass::remove_student(const string& student_ID){
