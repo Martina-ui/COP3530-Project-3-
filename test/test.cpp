@@ -41,3 +41,25 @@ TEST_CASE("Test five incorrect insert commands", "[insert]") {
     
     cout.rdbuf(old_cout);
 }
+
+TEST_CASE("Test remove student", "[remove]") {
+    CampusCompass compass;
+    
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("insert \"Josh Smith\" 12345678 1 1 COP3530");
+    REQUIRE(buffer.str() == "successful\n");
+    buffer.str(""); 
+
+    compass.ParseCommand("remove 12345678");
+    
+    REQUIRE(buffer.str() == "successful\n");
+    buffer.str(""); 
+
+    compass.ParseCommand("remove 12345678");
+    
+    REQUIRE(buffer.str() == "unsuccessful\n");
+
+    cout.rdbuf(old_cout);
+}

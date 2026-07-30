@@ -218,8 +218,14 @@ void CampusCompass::insert_student(const string& name, const string& student_ID,
     cout << "successful" << endl;
 }
 
-void CampusCompass::remove_student(const string& student_ID){
+void CampusCompass::remove_student(const string& student_ID) {
+    if (students.find(student_ID) == students.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+    students.erase(student_ID);
 
+    cout << "successful" << endl;
 }
 
 void CampusCompass::drop_class(const string& student_ID, const string& class_code){
