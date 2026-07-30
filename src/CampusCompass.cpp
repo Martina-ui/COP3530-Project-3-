@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -228,16 +229,110 @@ void CampusCompass::remove_student(const string& student_ID) {
     cout << "successful" << endl;
 }
 
-void CampusCompass::drop_class(const string& student_ID, const string& class_code){
+void CampusCompass::drop_class(const string& student_ID, const string& class_code) {
+    if (students.find(student_ID) == students.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
 
+    if (classes.find(class_code) == classes.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    auto& student_classes = students[student_ID].class_codes; 
+    auto it = find(student_classes.begin(), student_classes.end(), class_code);
+    
+    if (it == student_classes.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+    student_classes.erase(it);
+
+    if (student_classes.empty()) {
+        students.erase(student_ID);
+    }
+
+    cout << "successful" << endl;
 }
 
-void CampusCompass::replace_class(const string& student_ID, const string& old_class_code, const string& new_class_code){
+void CampusCompass::replace_class(const string& student_ID, const string& old_class_code, const string& new_class_code) {
+    if (students.find(student_ID) == students.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
 
+    if (classes.find(new_class_code) == classes.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    auto& student_classes = students[student_ID].class_codes;
+    auto it_old = find(student_classes.begin(), student_classes.end(), old_class_code);
+    if (it_old == student_classes.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    auto it_new = find(student_classes.begin(), student_classes.end(), new_class_code);
+    if (it_new != student_classes.end()) {
+        cout << "unsuccessful" << endl; 
+        return;
+    }
+    *it_old = new_class_code;
+
+    cout << "successful" << endl;
 }
 
-void CampusCompass::remove_class(const string& class_code){
+void CampusCompass::remove_class(const string& class_code) {
+    if (class_code.length() != 7) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+    for (int i = 0; i < 3; i++) {
+        if (!isupper(class_code[i])) {
+            cout << "unsuccessful" << endl;
+            return;
+        }
+    }
+    for (int i = 3; i < 7; i++) {
+        if (!isdigit(class_code[i])) {
+            cout << "unsuccessful" << endl;
+            return;
+        }
+    }
 
+    if (classes.find(class_code) == classes.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    int students_affected_count = 0;
+    vector<string> students_to_delete; 
+
+    for (auto& pair : students) {
+        auto& student_classes = pair.second.class_codes;
+        auto it = find(student_classes.begin(), student_classes.end(), class_code);
+        if (it != student_classes.end()) {
+            student_classes.erase(it);
+            students_affected_count++;
+
+            if (student_classes.empty()) {
+                students_to_delete.push_back(pair.first); 
+            }
+        }
+    }
+
+    if (students_affected_count == 0) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    for (const string& id : students_to_delete) {
+        students.erase(id);
+    }
+
+    cout << students_affected_count << endl;
 }
 
 void CampusCompass::toggle_edges_closure(const vector<int>& location_ids){
