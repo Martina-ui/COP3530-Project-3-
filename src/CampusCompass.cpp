@@ -335,12 +335,42 @@ void CampusCompass::remove_class(const string& class_code) {
     cout << students_affected_count << endl;
 }
 
-void CampusCompass::toggle_edges_closure(const vector<int>& location_ids){
+void CampusCompass::toggle_edges_closure(const vector<int>& location_ids) {
+    for (size_t i = 0; i < location_ids.size(); i += 2) {
+        int loc_u = location_ids[i];
+        int loc_v = location_ids[i+1];
 
+        for (Edge& edge : campus_graph[loc_u]) {
+            if (edge.destination_id == loc_v) {
+                edge.is_closed = !edge.is_closed; 
+                break; 
+            }
+        }
+
+        for (Edge& edge : campus_graph[loc_v]) {
+            if (edge.destination_id == loc_u) {
+                edge.is_closed = !edge.is_closed;
+                break;
+            }
+        }
+    }
+    cout << "successful" << endl;
 }
 
-void CampusCompass::check_edge_status(int location_x, int location_y){
-
+void CampusCompass::check_edge_status(int location_x, int location_y) {
+    if (campus_graph.find(location_x) != campus_graph.end()) {
+        for (const Edge& edge : campus_graph[location_x]) {
+            if (edge.destination_id == location_y) {
+                if (edge.is_closed) {
+                    cout << "closed" << endl;
+                } else {
+                    cout << "open" << endl;
+                }
+                return; 
+            }
+        }
+    }
+    cout << "DNE" << endl;
 }
 
 void CampusCompass::is_connected(int location_1, int location_2){

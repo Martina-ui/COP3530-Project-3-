@@ -108,7 +108,7 @@ TEST_CASE("Test replaceClass", "[replaceClass]") {
     cout.rdbuf(old_cout);
 }
 
-TEST_CASE("Test removeClass functionality", "[removeClass]") {
+TEST_CASE("Test removeClass", "[removeClass]") {
     CampusCompass compass;
     compass.ParseCSV("data/edges.csv", "data/classes.csv");
 
@@ -127,6 +127,48 @@ TEST_CASE("Test removeClass functionality", "[removeClass]") {
 
     compass.ParseCommand("remove 10000002");
     REQUIRE(buffer.str() == "unsuccessful\n"); 
+
+    cout.rdbuf(old_cout);
+}
+
+TEST_CASE("Test toggleEdgesClosure", "[edges][toggle]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("toggleEdgesClosure 1 1 2");
+    REQUIRE(buffer.str() == "successful\n");
+    buffer.str("");
+
+    compass.ParseCommand("checkEdgeStatus 1 2");
+    REQUIRE(buffer.str() == "closed\n");
+    buffer.str("");
+
+    compass.ParseCommand("toggleEdgesClosure 1 1 2");
+    REQUIRE(buffer.str() == "successful\n");
+    buffer.str("");
+
+    compass.ParseCommand("checkEdgeStatus 1 2");
+    REQUIRE(buffer.str() == "open\n");
+
+    cout.rdbuf(old_cout);
+}
+
+TEST_CASE("Test checkEdgeStatus", "[edges][status]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("checkEdgeStatus 1 2");
+    REQUIRE(buffer.str() == "open\n");
+    buffer.str("");
+
+    compass.ParseCommand("checkEdgeStatus 999 998");
+    REQUIRE(buffer.str() == "DNE\n");
 
     cout.rdbuf(old_cout);
 }
