@@ -172,3 +172,99 @@ TEST_CASE("Test checkEdgeStatus", "[edges][status]") {
 
     cout.rdbuf(old_cout);
 }
+
+TEST_CASE("Test isConnected", "[edges][connected]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("isConnected 1 2");
+    REQUIRE(buffer.str() == "successful\n");
+    buffer.str("");
+
+    compass.ParseCommand("isConnected 1 999");
+    REQUIRE(buffer.str() == "unsuccessful\n");
+
+    cout.rdbuf(old_cout);
+}
+
+TEST_CASE("Test printShortestEdges", "[shortest_path]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("insert \"Gator\" 11111111 1 1 COP3530");
+    buffer.str(""); 
+
+    //can reach class initially
+    compass.ParseCommand("printShortestEdges 11111111");
+    string actual_reachable = buffer.str();
+    buffer.str(""); 
+
+    //toggle edges to make class unreachable
+    compass.ParseCommand("toggleEdgesClosure 2 1 4 2 4");
+    buffer.str(""); 
+
+    //class is now unreachable
+    compass.ParseCommand("printShortestEdges 11111111");
+    string actual_unreachable = buffer.str();
+
+    cout.rdbuf(old_cout);
+
+    string expected_reachable = "Time For Shortest Edges: Gator\nCOP3530: 23\n";
+    REQUIRE(actual_reachable == expected_reachable);
+
+    string expected_unreachable = "Time For Shortest Edges: Gator\nCOP3530: -1\n";
+    REQUIRE(actual_unreachable == expected_unreachable);
+}
+
+TEST_CASE("Test printStudentZone", "[mst][student_zone]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    compass.ParseCommand("insert \"Gator\" 11111111 1 1 COP3530");
+    buffer.str(""); 
+
+    compass.ParseCommand("printStudentZone 11111111");
+    string actual_output = buffer.str();
+
+    cout.rdbuf(old_cout);
+
+    string expected_output = "Student Zone Cost For Gator: 23\n"; 
+    
+    REQUIRE(actual_output == expected_output);
+}
+
+TEST_CASE("Test three edge cases", "[edge_cases]") {
+    CampusCompass compass;
+    compass.ParseCSV("data/edges.csv", "data/classes.csv");
+
+    stringstream buffer;
+    streambuf* old_cout = cout.rdbuf(buffer.rdbuf());
+
+    //removing a nonexistent student
+    compass.ParseCommand("remove 99999999");
+    REQUIRE(buffer.str() == "unsuccessful\n");
+    buffer.str("");
+
+    //dropping a class that a student doesnt have
+    compass.ParseCommand("insert \"Martina\" 10000001 1 1 COP3530");
+    buffer.str(""); 
+    
+    compass.ParseCommand("dropClass 10000001 MAC2311"); 
+    REQUIRE(buffer.str() == "unsuccessful\n");
+    buffer.str("");
+
+    //checking isConnected for a location ID that doesn't exist
+    compass.ParseCommand("isConnected 9999 8888");
+    REQUIRE(buffer.str() == "unsuccessful\n");
+
+    cout.rdbuf(old_cout);
+}

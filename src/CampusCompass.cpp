@@ -4,6 +4,9 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <queue>
+#include <unordered_set>
+#include <utility> 
 
 using namespace std;
 
@@ -63,8 +66,6 @@ bool CampusCompass::ParseCSV(const string &edges_filepath, const string &classes
         classes[code] = info;
     }
     classes_file.close();
-
-    // return boolean based on whether parsing was successful or not
     return true;
 }
 
@@ -204,6 +205,10 @@ void CampusCompass::insert_student(const string& name, const string& student_ID,
                 cout << "unsuccessful" << endl;
                 return;
             }
+        }
+        if (classes.find(code) == classes.end()) {
+            cout << "unsuccessful" << endl;
+            return;
         }
     }
 
@@ -373,26 +378,162 @@ void CampusCompass::check_edge_status(int location_x, int location_y) {
     cout << "DNE" << endl;
 }
 
-void CampusCompass::is_connected(int location_1, int location_2){
+void CampusCompass::is_connected(int location_1, int location_2) {
+    if (location_1 == location_2) {
+        cout << "successful" << endl;
+        return;
+    }
+    if (campus_graph.find(location_1) == campus_graph.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
 
+    unordered_set<int> visited;
+    queue<int> q;
+    q.push(location_1);
+    visited.insert(location_1);
+    while (!q.empty()) {
+        int current_location = q.front();
+        q.pop();
+        if (current_location == location_2) {
+            cout << "successful" << endl;
+            return;
+        }
+        for (const Edge& edge : campus_graph[current_location]) {
+            if (!edge.is_closed && visited.find(edge.destination_id) == visited.end()) {
+                visited.insert(edge.destination_id);
+                q.push(edge.destination_id);
+            }
+        }
+    }
+    cout << "unsuccessful" << endl;
 }
 
-void CampusCompass::print_shortest_edges(const string& student_ID){
+void CampusCompass::print_shortest_edges(const string& student_ID) {
+    if (students.find(student_ID) == students.end()) {
+        return; 
+    }
+    const Student& student = students[student_ID];
+    unordered_map<int, int> shortest_paths = get_shortest_path(student.residence_location_id);
+    cout << "Time For Shortest Edges: " << student.name << endl;
+    vector<string> sorted_classes = student.class_codes;
+    sort(sorted_classes.begin(), sorted_classes.end());
+    for (const string& class_code : sorted_classes) {
+        int class_location = classes[class_code].location_id;
 
-} 
+        if (shortest_paths.find(class_location) != shortest_paths.end()) {
+            cout << class_code << ": " << shortest_paths[class_location] << endl;
+        } else {
+            cout << class_code << ": -1" << endl;
+        }
+    }
+}
 
-void CampusCompass::print_student_zone(const string& student_ID){
+void CampusCompass::print_student_zone(const string& student_ID) {
+    if (students.find(student_ID) == students.end()) {
+        return; 
+    }
+    const Student& student = students[student_ID];
+    vector<int> class_location_ids;
+    for (const string& class_code : student.class_codes) {
+        class_location_ids.push_back(classes[class_code].location_id);
+    }
 
+    int mst_cost = calculate_cost_of_mst(student.residence_location_id, class_location_ids);
+
+    cout << "Student Zone Cost For " << student.name << ": " << mst_cost << endl;
 }
 
 unordered_map<int, int> CampusCompass::get_shortest_path(int starting_location) {
     unordered_map<int, int> distances;
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq; //https://www.geeksforgeeks.org/cpp/pair-in-cpp-stl/
 
+    pq.push({0, starting_location});
+    distances[starting_location] = 0;
+
+    while (!pq.empty()) {
+        int current_dist = pq.top().first;
+        int current_loc = pq.top().second;
+        pq.pop();
+        if (current_dist > distances[current_loc]) {
+            continue;
+        }
+
+        for (const Edge& edge : campus_graph[current_loc]) {
+            if (edge.is_closed) {
+                continue;
+            }
+            int new_dist = current_dist + edge.time;
+            if (distances.find(edge.destination_id) == distances.end() || new_dist < distances[edge.destination_id]) {
+                distances[edge.destination_id] = new_dist;
+                pq.push({new_dist, edge.destination_id});
+            }
+        }
+    }
     return distances;
 }
 
-int CampusCompass::calculate_cost_of_mst(int residence_location_id, const vector<int>& class_location_ids){
-    int total_cost = 0;
+int CampusCompass::calculate_cost_of_mst(int residence_location_id, const vector<int>& class_location_ids) {
+    unordered_map<int, int> distances;
+    unordered_map<int, int> parents; 
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
 
+    pq.push({0, residence_location_id});
+    distances[residence_location_id] = 0;
+    parents[residence_location_id] = residence_location_id; 
+
+    while (!pq.empty()) {
+        int current_dist = pq.top().first;
+        int current_loc = pq.top().second;
+        pq.pop();
+
+        if (current_dist > distances[current_loc]) continue;
+
+        for (const Edge& edge : campus_graph[current_loc]) {
+            if (edge.is_closed) continue;
+            
+            int new_dist = current_dist + edge.time;
+            if (distances.find(edge.destination_id) == distances.end() || new_dist < distances[edge.destination_id]) {
+                distances[edge.destination_id] = new_dist;
+                parents[edge.destination_id] = current_loc;
+                pq.push({new_dist, edge.destination_id});
+            }
+        }
+    }
+    unordered_set<int> subgraph_nodes;
+    subgraph_nodes.insert(residence_location_id);
+    for (int class_loc : class_location_ids) {
+        if (distances.find(class_loc) == distances.end()) continue; 
+        int curr = class_loc;
+        while (curr != residence_location_id) {
+            subgraph_nodes.insert(curr);
+            curr = parents[curr]; 
+        }
+    }
+    int total_cost = 0;
+    unordered_set<int> in_mst;
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> mst_pq;
+    in_mst.insert(residence_location_id);
+    for (const Edge& edge : campus_graph[residence_location_id]) {
+        if (!edge.is_closed && subgraph_nodes.find(edge.destination_id) != subgraph_nodes.end()) {
+            mst_pq.push({edge.time, edge.destination_id});
+        }
+    }
+
+    while (!mst_pq.empty() && in_mst.size() < subgraph_nodes.size()) {
+        int weight = mst_pq.top().first;
+        int node = mst_pq.top().second;
+        mst_pq.pop();
+        if (in_mst.find(node) != in_mst.end()) continue; 
+        in_mst.insert(node);
+        total_cost += weight; 
+        for (const Edge& edge : campus_graph[node]) {
+            if (!edge.is_closed && subgraph_nodes.find(edge.destination_id) != subgraph_nodes.end()) {
+                if (in_mst.find(edge.destination_id) == in_mst.end()) {
+                    mst_pq.push({edge.time, edge.destination_id});
+                }
+            }
+        }
+    }
     return total_cost;
 }

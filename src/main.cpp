@@ -5,24 +5,18 @@
 using namespace std;
 
 int main() {
-    // initialize your main project object
     CampusCompass compass;
 
-    // ingest CSV data
     if (!compass.ParseCSV("data/edges.csv", "data/classes.csv")) {
         cout << "Error: Failed to load CSV files" << endl;
         return 0;
     }
-
-    // the below is example code for parsing commandline input
-    int no_of_lines;
-    string command;
-    cin >> no_of_lines;
-    cin.ignore(); // ignore newline that first cin left over
+    string num_lines_str;
+    getline(cin, num_lines_str);
+    int no_of_lines = stoi(num_lines_str);
     for (int i = 0; i < no_of_lines; i++) {
+        string command;
         getline(cin, command);
-
-        // parse your commands however you see fit
         compass.ParseCommand(command);
     }
     return 0;
